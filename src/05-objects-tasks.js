@@ -20,8 +20,12 @@
  *    console.log(r.height);      // => 20
  *    console.log(r.getArea());   // => 200
  */
-function Rectangle(/* width, height */) {
-  throw new Error('Not implemented');
+function Rectangle(width, height) {
+  return {
+    width,
+    height,
+    getArea: () => width * height,
+  };
 }
 
 
@@ -35,8 +39,8 @@ function Rectangle(/* width, height */) {
  *    [1,2,3]   =>  '[1,2,3]'
  *    { width: 10, height : 20 } => '{"height":10,"width":20}'
  */
-function getJSON(/* obj */) {
-  throw new Error('Not implemented');
+function getJSON(obj) {
+  return JSON.stringify(obj);
 }
 
 
@@ -51,8 +55,11 @@ function getJSON(/* obj */) {
  *    const r = fromJSON(Circle.prototype, '{"radius":10}');
  *
  */
-function fromJSON(/* proto, json */) {
-  throw new Error('Not implemented');
+function fromJSON(proto, json) {
+  const parsedObject = JSON.parse(json);
+  const obj = Object.create(proto);
+  Object.assign(obj, parsedObject);
+  return obj;
 }
 
 
@@ -111,32 +118,100 @@ function fromJSON(/* proto, json */) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  selector: '',
+  elementUsed: false,
+  idUsed: false,
+  pseudoElementUsed: false,
+  order: 0,
+
+  checkOrder(newOrder) {
+    if (newOrder < this.order) {
+      throw new Error(
+        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element',
+      );
+    } else {
+      this.order = newOrder;
+    }
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    this.checkOrder(1);
+    if (this.elementUsed) {
+      throw new Error(
+        'Element, id and pseudo-element should not occur more then one time inside the selector',
+      );
+    }
+    const newSelector = Object.create(this);
+    newSelector.selector = `${this.selector}${value}`;
+    newSelector.elementUsed = true;
+    newSelector.order = 1;
+    return newSelector;
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    this.checkOrder(2);
+    if (this.idUsed) {
+      throw new Error(
+        'Element, id and pseudo-element should not occur more then one time inside the selector',
+      );
+    }
+    const newSelector = Object.create(this);
+    newSelector.selector = `${this.selector}#${value}`;
+    newSelector.idUsed = true;
+    newSelector.order = 2;
+    return newSelector;
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    this.checkOrder(3);
+    const newSelector = Object.create(this);
+    newSelector.selector = `${this.selector}.${value}`;
+    newSelector.order = 3;
+    return newSelector;
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    this.checkOrder(4);
+    const newSelector = Object.create(this);
+    newSelector.selector = `${this.selector}[${value}]`;
+    newSelector.order = 4;
+    return newSelector;
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    this.checkOrder(5);
+    const newSelector = Object.create(this);
+    newSelector.selector = `${this.selector}:${value}`;
+    newSelector.order = 5;
+    return newSelector;
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    this.checkOrder(6);
+    if (this.pseudoElementUsed) {
+      throw new Error(
+        'Element, id and pseudo-element should not occur more then one time inside the selector',
+      );
+    }
+    const newSelector = Object.create(this);
+    newSelector.selector = `${this.selector}::${value}`;
+    newSelector.pseudoElementUsed = true;
+    newSelector.order = 6;
+    return newSelector;
+  },
+
+  combine(selector1, combinator, selector2) {
+    const newSelector = Object.create(cssSelectorBuilder);
+    newSelector.selector = `${selector1.stringify()} ${combinator} ${selector2.stringify()}`;
+    newSelector.order = 0;
+    newSelector.elementUsed = false;
+    newSelector.idUsed = false;
+    newSelector.pseudoElementUsed = false;
+    return newSelector;
+  },
+
+  stringify() {
+    return this.selector;
   },
 };
 
